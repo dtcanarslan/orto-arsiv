@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Orto Arşiv</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d6b6a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Orto Arşiv">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: tek sütun klinik defteri. Üstte sabit arama çubuğu, altında kayıt listesi; hasta formu ve dosya aynı sütunda açılır. */
+:root{
+  --bg:#f2f4f5; --panel:#ffffff; --fg:#17222b; --muted:#5d6b76; --line:#d6dde2;
+  --accent:#0d6b6a; --accent-fg:#ffffff; --accent-soft:#dcefee; --chip:#e8edf0; --chip-on:#0d6b6a;
+  --ok:#2d7a3e; --warn:#a0620b; --danger:#b23a3a;
+  --font:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111618; --panel:#1a2124; --fg:#e6ebee; --muted:#95a3ad; --line:#2d373c;
+  --accent:#4cb8b4; --accent-fg:#0b1516; --accent-soft:#163a3a; --chip:#242e33; --chip-on:#4cb8b4;
+  --ok:#6cc882; --warn:#e2a54a; --danger:#e07070; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111618; --panel:#1a2124; --fg:#e6ebee; --muted:#95a3ad; --line:#2d373c;
+  --accent:#4cb8b4; --accent-fg:#0b1516; --accent-soft:#163a3a; --chip:#242e33; --chip-on:#4cb8b4;
+  --ok:#6cc882; --warn:#e2a54a; --danger:#e07070; color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 32px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:860px;margin:0 auto}
+h1,h2,h3{margin:0;text-wrap:balance;font-weight:600}
+h1{font-size:1.15rem;letter-spacing:.01em}
+h2{font-size:1.05rem;margin-bottom:8px}
+h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:18px 0 8px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+a{color:var(--accent)}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:8px;padding:8px 14px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:500}
+button.ghost{background:transparent;border-color:transparent;color:var(--accent);padding:6px 8px}
+button.danger{color:var(--danger);border-color:var(--danger)}
+button.small{padding:5px 10px;font-size:.85rem}
+input,select,textarea{font:inherit;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+textarea{min-height:70px;resize:vertical}
+label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:4px}
+.field{min-width:0}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:12px 0 10px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.topbar .row{justify-content:space-between}
+.brand{display:flex;align-items:baseline;gap:10px}
+.brand .count{font-family:var(--mono);font-size:.8rem;color:var(--muted)}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.panel + .panel{margin-top:14px}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid transparent;background:var(--chip);color:var(--fg);border-radius:999px;padding:4px 11px;font-size:.84rem;cursor:pointer;user-select:none}
+.chip.on{background:var(--chip-on);color:var(--accent-fg);border-color:var(--chip-on)}
+.chip.static{cursor:default}
+.chip.sm{padding:2px 8px;font-size:.76rem}
+
+/* list */
+.search{display:flex;gap:8px;margin-bottom:10px}
+.search input{flex:1}
+.filters{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.filters .fgroup{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.filters .fgroup>span{font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);min-width:70px;padding-top:6px}
+.list{display:flex;flex-direction:column;gap:8px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:4px 12px}
+.card:hover{border-color:var(--accent)}
+.card .name{font-weight:600}
+.card .meta{font-size:.82rem;color:var(--muted);font-family:var(--mono)}
+.card .tagline{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.status{font-size:.74rem;padding:2px 8px;border-radius:999px;border:1px solid var(--line);text-transform:lowercase;white-space:nowrap;align-self:start}
+.status.aktif{color:var(--ok);border-color:var(--ok)}
+.status.retansiyon{color:var(--warn);border-color:var(--warn)}
+.status.bitti{color:var(--muted)}
+.status.birakti{color:var(--danger);border-color:var(--danger)}
+.empty{padding:30px 10px;text-align:center;color:var(--muted)}
+
+/* detail */
+.detail-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start}
+.detail-head h2{font-size:1.3rem}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;margin:0}
+dt{color:var(--muted);font-size:.84rem}
+dd{margin:0;font-family:var(--mono);font-size:.9rem;min-width:0;overflow-wrap:anywhere}
+.visit{display:grid;grid-template-columns:max-content 1fr auto;gap:6px 12px;padding:10px 0;border-top:1px solid var(--line);align-items:start}
+.visit:first-of-type{border-top:0}
+.visit .d{font-family:var(--mono);font-size:.85rem;white-space:nowrap}
+.visit .n{min-width:0}
+.visit .n small{display:block;color:var(--muted)}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:.9rem;z-index:20;max-width:calc(100% - 32px);text-align:center}
+.confirm{border:1px solid var(--danger);border-radius:10px;padding:12px;margin-top:10px}
+.auth{max-width:420px;margin:40px auto 0;display:flex;flex-direction:column;gap:12px}
+.auth p{margin:0;font-size:.9rem;color:var(--muted)}
+.hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+.sep{height:1px;background:var(--line);margin:14px 0}
+@media (max-width:480px){.visit{grid-template-columns:1fr auto}.visit .d{grid-column:1/-1}}
+@media (prefers-reduced-motion:no-preference){.card{transition:border-color .12s}}
+</style>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="row">
+      <div class="brand"><h1>Orto Arşiv</h1><span class="count" id="count"></span></div>
+      <div class="row" id="topActions"></div>
+    </div>
+  </div>
+  <div id="app"></div>
+</div>
+<div id="toast" class="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const app = $('#app');
+
+/* ---------- sözlükler ---------- */
+const TAGS = ["Sınıf I","Sınıf II/1","Sınıf II/2","Sınıf III","Ön çapraz kapanış","Posterior çapraz kapanış (tek taraflı)","Posterior çapraz kapanış (çift taraflı)","Scissor bite","Ön open bite","Derin kapanış","Artmış overjet","Çapraşıklık","Diastema / spacing","Orta hat sapması","Gömülü kanin","Gömülü diş (diğer)","Agenezi","Süpernümerer diş","Dudak damak yarığı","Sendrom / kraniyofasiyal","Mandibular asimetri","Dental travma / ankiloz","TME semptomu","Parmak emme / alışkanlık","Ağız solunumu","Dil itimi","Periodontal sorun","Erişkin hasta","Erken dönem (Faz 1)","Bilimsel çalışma adayı","Ders vakası"];
+const APPL = ["Twin Block","Herbst","Forsus","Monoblok / Aktivatör","Bionator","Fränkel","Headgear","Reverse headgear (facemask)","Chin cup","RME / Hyrax","MARPE","Quad helix","Lingual ark","Nance","TPA","Hareketli plak (Hawley)","Sabit tedavi (metal)","Sabit tedavi (seramik)","Self-ligating","Lingual braket","Şeffaf plak (aligner)","Miniscrew / TAD","Distalizasyon (Pendulum / Carriere)","Ortognatik cerrahi","SARPE","Yer tutucu","Habit breaker","Retansiyon (Essix / lingual retainer)"];
+const PROCS = ["İlk muayene","Kayıt alımı","Braketleme","Tel değişimi","Aparey teslimi","Aktivasyon","Elastik","Rutin kontrol","Debonding","Retansiyon kontrolü","Çekime yönlendirme","Kırık / acil","Tedavi bitti"];
+const RECS = [["photos","Fotoğraf"],["pano","Panoramik"],["ceph","Lateral sefalometri"],["pa","PA sefalometri"],["cbct","CBCT"],["models","Alçı model"],["scan","Dijital tarama"],["handwrist","El-bilek"],["face3d","3D yüz"]];
+const STATUS = [["aktif","Aktif"],["bekliyor","Bekliyor"],["retansiyon","Retansiyon"],["bitti","Bitti"],["birakti","Bıraktı"]];
+const ANGLE = ["","I","II","II (yarım)","III","III (yarım)"];
+const SAG = ["","I","II","III"];
+const VERT = ["","Hipodiverjan","Normodiverjan","Hiperdiverjan"];
+const CVM = ["","CS1","CS2","CS3","CS4","CS5","CS6"];
+
+/* ---------- durum ---------- */
+let sb = null, user = null, patients = [], view = {name:'list'}, filters = {q:'',tags:[],appl:[],status:'',sex:'',angle:'',sag:''};
+const cfg = (()=>{try{return JSON.parse(localStorage.getItem('orto_cfg')||'null')}catch(e){return null}})();
+
+function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(t._t);t._t=setTimeout(()=>t.hidden=true,2600)}
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtD = d => d ? new Date(d+'T00:00:00').toLocaleDateString('tr-TR') : '—';
+const age = b => {if(!b)return '';const t=new Date(),bd=new Date(b);let a=t.getFullYear()-bd.getFullYear();if(t<new Date(t.getFullYear(),bd.getMonth(),bd.getDate()))a--;return a+' y'};
+const today = () => new Date().toISOString().slice(0,10);
+
+/* ---------- kurulum / giriş ---------- */
+function renderSetup(){
+  $('#topActions').innerHTML='';$('#count').textContent='';
+  app.innerHTML=`<div class="auth panel">
+    <h2>Bağlantı ayarı</h2>
+    <p>Supabase projenin URL'si ve <b>anon</b> anahtarı. Bir kez girilir, bu cihazda saklanır.</p>
+    <div class="field"><label for="cfgUrl">Project URL</label><input id="cfgUrl" placeholder="https://xxxx.supabase.co" value="${esc(cfg?.url||'')}"></div>
+    <div class="field"><label for="cfgKey">Publishable key (veya anon key)</label><input id="cfgKey" placeholder="sb_publishable_..." value="${esc(cfg?.key||'')}"></div>
+    <button class="primary" id="cfgSave">Kaydet ve devam et</button>
+    <p>Supabase &rsaquo; Project Settings &rsaquo; API Keys altında ikisi de görünür.</p>
+  </div>`;
+  $('#cfgSave').onclick=()=>{
+    const url=$('#cfgUrl').value.trim(),key=$('#cfgKey').value.trim();
+    if(!/^https:\/\/.+supabase\.co\/?$/.test(url)||key.length<20){toast('URL veya anahtar eksik görünüyor');return}
+    try{localStorage.setItem('orto_cfg',JSON.stringify({url,key}))}catch(e){}
+    location.reload();
+  };
+}
+
+function renderAuth(){
+  $('#topActions').innerHTML='<button class="ghost small" id="reCfg">Bağlantı</button>';$('#count').textContent='';
+  $('#reCfg').onclick=()=>{try{localStorage.removeItem('orto_cfg')}catch(e){}location.reload()};
+  app.innerHTML=`<div class="auth panel">
+    <h2>Giriş</h2>
+    <div class="field"><label for="em">E-posta</label><input id="em" type="email" autocomplete="username"></div>
+    <div class="field"><label for="pw">Şifre</label><input id="pw" type="password" autocomplete="current-password"></div>
+    <button class="primary" id="login">Giriş yap</button>
+    <button id="signup">İlk kez: hesap oluştur</button>
+    <p id="authMsg"></p>
+  </div>`;
+  const msg=m=>$('#authMsg').textContent=m;
+  $('#login').onclick=async()=>{
+    const {error}=await sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});
+    if(error){msg('Giriş olmadı: '+error.message);return}
+    start();
+  };
+  $('#signup').onclick=async()=>{
+    const {data,error}=await sb.auth.signUp({email:$('#em').value.trim(),password:$('#pw').value});
+    if(error){msg('Olmadı: '+error.message);return}
+    if(data.session){start()} else msg('Hesap açıldı. E-postandaki doğrulama bağlantısına tıklayıp giriş yap.');
+  };
+  $('#pw').addEventListener('keydown',e=>{if(e.key==='Enter')$('#login').click()});
+}
+
+/* ---------- veri ---------- */
+async function loadPatients(){
+  const {data,error}=await sb.from('patients').select('*').order('updated_at',{ascending:false});
+  if(error){toast('Yükleme hatası: '+error.message);return}
+  patients=data||[];
+}
+async function savePatient(p){
+  const row={...p};delete row.id;delete row.created_at;delete row.updated_at;delete row.user_id;
+  let res;
+  if(p.id) res=await sb.from('patients').update(row).eq('id',p.id).select().single();
+  else res=await sb.from('patients').insert(row).select().single();
+  if(res.error){toast('Kaydedilemedi: '+res.error.message);return null}
+  await loadPatients();return res.data;
+}
+async function deletePatient(id){
+  const {error}=await sb.from('patients').delete().eq('id',id);
+  if(error){toast('Silinemedi: '+error.message);return false}
+  await loadPatients();return true;
+}
+async function loadVisits(pid){
+  const {data,error}=await sb.from('visits').select('*').eq('patient_id',pid).order('visit_date',{ascending:false});
+  if(error){toast('Vizitler yüklenemedi');return[]}
+  return data||[];
+}
+
+/* ---------- liste ---------- */
+function matches(p){
+  const q=filters.q.trim().toLocaleLowerCase('tr');
+  if(q){const hay=[p.first_name,p.last_name,p.protocol_no,p.notes,p.chief_complaint,...(p.tags||[]),...(p.appliances||[])].join(' ').toLocaleLowerCase('tr');
+    if(!q.split(/\s+/).every(w=>hay.includes(w)))return false}
+  if(filters.status&&p.status!==filters.status)return false;
+  if(filters.sex&&p.sex!==filters.sex)return false;
+  if(filters.angle&&!((p.dental||{}).angle_r===filters.angle||(p.dental||{}).angle_l===filters.angle))return false;
+  if(filters.sag&&(p.skeletal||{}).sagittal!==filters.sag)return false;
+  if(!filters.tags.every(t=>(p.tags||[]).includes(t)))return false;
+  if(!filters.appl.every(t=>(p.appliances||[]).includes(t)))return false;
+  return true;
+}
+function chipRow(list,selected,cls){
+  return list.map(t=>`<span class="chip sm ${selected.includes(t)?'on':''}" data-${cls}="${esc(t)}">${esc(t)}</span>`).join('');
+}
+function renderList(){
+  view={name:'list'};
+  $('#topActions').innerHTML=`<button class="ghost small" id="exportBtn">CSV kopyala</button><button class="ghost small" id="logout">Çıkış</button><button class="primary small" id="newBtn">+ Yeni hasta</button>`;
+  $('#newBtn').onclick=()=>renderForm(null);
+  $('#logout').onclick=async()=>{await sb.auth.signOut();user=null;renderAuth()};
+  $('#exportBtn').onclick=exportCSV;
+  const shown=patients.filter(matches);
+  $('#count').textContent=`${shown.length} / ${patients.length}`;
+  const activeF=filters.tags.length+filters.appl.length+(filters.status?1:0)+(filters.sex?1:0)+(filters.angle?1:0)+(filters.sag?1:0);
+  app.innerHTML=`
+    <div class="search"><input id="q" placeholder="Ad, protokol no, etiket..." value="${esc(filters.q)}" autocomplete="off"><button id="togF" class="${activeF?'primary':''}">Filtre${activeF?' · '+activeF:''}</button></div>
+    <div class="filters" id="fbox" ${filters._open?'':'hidden'}>
+      <div class="fgroup"><span>Durum</span><div class="chips">${STATUS.map(([k,l])=>`<span class="chip sm ${filters.status===k?'on':''}" data-status="${k}">${l}</span>`).join('')}</div></div>
+      <div class="fgroup"><span>Cins.</span><div class="chips"><span class="chip sm ${filters.sex==='K'?'on':''}" data-sex="K">Kadın</span><span class="chip sm ${filters.sex==='E'?'on':''}" data-sex="E">Erkek</span></div></div>
+      <div class="fgroup"><span>Angle</span><div class="chips">${ANGLE.filter(Boolean).map(a=>`<span class="chip sm ${filters.angle===a?'on':''}" data-angle="${esc(a)}">${esc(a)}</span>`).join('')}</div></div>
+      <div class="fgroup"><span>İskelet</span><div class="chips">${SAG.filter(Boolean).map(a=>`<span class="chip sm ${filters.sag===a?'on':''}" data-sag="${a}">Sınıf ${a}</span>`).join('')}</div></div>
+      <div class="fgroup"><span>Anomali</span><div class="chips">${chipRow(TAGS,filters.tags,'tag')}</div></div>
+      <div class="fgroup"><span>Aparey</span><div class="chips">${chipRow(APPL,filters.appl,'appl')}</div></div>
+      <div class="row"><button class="small" id="clearF">Filtreleri temizle</button></div>
+    </div>
+    <div class="list" id="list">${shown.length?shown.map(cardHTML).join(''):`<div class="empty">${patients.length?'Bu filtrelere uyan kayıt yok.':'Henüz kayıt yok. Sağ üstten ilk hastayı ekle.'}</div>`}</div>`;
+  $('#q').oninput=e=>{filters.q=e.target.value;$('#list').innerHTML=patients.filter(matches).map(cardHTML).join('')||'<div class="empty">Eşleşen kayıt yok.</div>';$('#count').textContent=`${patients.filter(matches).length} / ${patients.length}`;bindCards()};
+  $('#togF').onclick=()=>{filters._open=!filters._open;renderList()};
+  $('#clearF').onclick=()=>{filters={q:filters.q,tags:[],appl:[],status:'',sex:'',angle:'',sag:'',_open:true};renderList()};
+  $('#fbox').onclick=e=>{
+    const c=e.target.closest('.chip');if(!c)return;
+    const d=c.dataset;
+    if(d.tag){filters.tags=toggle(filters.tags,d.tag)}
+    else if(d.appl){filters.appl=toggle(filters.appl,d.appl)}
+    else if(d.status!==undefined){filters.status=filters.status===d.status?'':d.status}
+    else if(d.sex){filters.sex=filters.sex===d.sex?'':d.sex}
+    else if(d.angle){filters.angle=filters.angle===d.angle?'':d.angle}
+    else if(d.sag){filters.sag=filters.sag===d.sag?'':d.sag}
+    renderList();
+  };
+  bindCards();
+}
+const toggle=(arr,v)=>arr.includes(v)?arr.filter(x=>x!==v):[...arr,v];
+function cardHTML(p){
+  const d=p.dental||{},s=p.skeletal||{};
+  const bits=[p.protocol_no?'#'+p.protocol_no:null,p.sex==='K'?'K':p.sex==='E'?'E':null,p.birth_date?age(p.birth_date):null,
+    (d.angle_r||d.angle_l)?`Angle ${d.angle_r||'?'}/${d.angle_l||'?'}`:null,s.sagittal?`İsk. ${s.sagittal}`:null].filter(Boolean).join(' · ');
+  const tags=[...(p.tags||[]).slice(0,4),...(p.appliances||[]).slice(0,3)];
+  return `<div class="card" data-id="${p.id}">
+    <div class="name">${esc(p.last_name.toLocaleUpperCase('tr'))} ${esc(p.first_name)}</div>
+    <span class="status ${esc(p.status||'')}">${esc((STATUS.find(x=>x[0]===p.status)||['',p.status||''])[1])}</span>
+    <div class="meta">${esc(bits)}</div>
+    ${tags.length?`<div class="tagline">${tags.map(t=>`<span class="chip sm static">${esc(t)}</span>`).join('')}</div>`:''}
+  </div>`;
+}
+function bindCards(){document.querySelectorAll('.card').forEach(c=>c.onclick=()=>renderDetail(c.dataset.id))}
+
+/* ---------- form ---------- */
+function sel(id,opts,val,labels){return `<select id="${id}">${opts.map((o,i)=>`<option value="${esc(o)}" ${o===(val||'')?'selected':''}>${esc(labels?labels[i]:(o||'—'))}</option>`).join('')}</select>`}
+function num(id,val,ph){return `<input id="${id}" type="number" step="0.5" inputmode="decimal" value="${val??''}" placeholder="${ph||''}">`}
+function renderForm(p){
+  const isNew=!p;p=p||{dental:{},skeletal:{},treatment:{},records:{},tags:[],appliances:[],status:'aktif',first_exam:today()};
+  const d=p.dental||{},s=p.skeletal||{},t=p.treatment||{},r=p.records||{};
+  view={name:'form',id:p.id};
+  $('#topActions').innerHTML=`<button class="ghost small" id="back">İptal</button>`;$('#back').onclick=()=>p.id?renderDetail(p.id):renderList();
+  app.innerHTML=`<form id="pf" class="panel" autocomplete="off">
+    <h2>${isNew?'Yeni hasta':'Kaydı düzenle'}</h2>
+    <h3>Kimlik</h3>
+    <div class="grid2">
+      <div class="field"><label for="fn">Ad</label><input id="fn" required value="${esc(p.first_name||'')}"></div>
+      <div class="field"><label for="ln">Soyad</label><input id="ln" required value="${esc(p.last_name||'')}"></div>
+      <div class="field"><label for="pn">Protokol no</label><input id="pn" class="mono" value="${esc(p.protocol_no||'')}"></div>
+      <div class="field"><label for="bd">Doğum tarihi</label><input id="bd" type="date" value="${p.birth_date||''}"></div>
+      <div class="field"><label for="sx">Cinsiyet</label>${sel('sx',['','K','E'],p.sex,['—','Kadın','Erkek'])}</div>
+      <div class="field"><label for="fe">İlk muayene</label><input id="fe" type="date" value="${p.first_exam||''}"></div>
+      <div class="field"><label for="st">Durum</label>${sel('st',STATUS.map(x=>x[0]),p.status,STATUS.map(x=>x[1]))}</div>
+      <div class="field"><label for="gs">Büyüme (CVM)</label>${sel('gs',CVM,p.growth_stage)}</div>
+    </div>
+    <div class="field" style="margin-top:12px"><label for="cc">Şikâyet</label><input id="cc" value="${esc(p.chief_complaint||'')}"></div>
+
+    <h3>Dental</h3>
+    <div class="grid3">
+      <div class="field"><label for="ar">Angle molar sağ</label>${sel('ar',ANGLE,d.angle_r)}</div>
+      <div class="field"><label for="al">Angle molar sol</label>${sel('al',ANGLE,d.angle_l)}</div>
+      <div class="field"><label for="cr">Kanin sağ</label>${sel('cr',ANGLE,d.canine_r)}</div>
+      <div class="field"><label for="cl">Kanin sol</label>${sel('cl',ANGLE,d.canine_l)}</div>
+      <div class="field"><label for="oj">Overjet (mm)</label>${num('oj',d.overjet)}</div>
+      <div class="field"><label for="ob">Overbite (mm)</label>${num('ob',d.overbite)}</div>
+      <div class="field"><label for="cu">Üst çapraşıklık (mm)</label>${num('cu',d.crowd_u)}</div>
+      <div class="field"><label for="cd">Alt çapraşıklık (mm)</label>${num('cd',d.crowd_l)}</div>
+      <div class="field"><label for="ml">Orta hat</label><input id="ml" value="${esc(d.midline||'')}" placeholder="alt 2 mm sağa"></div>
+    </div>
+
+    <h3>İskeletsel</h3>
+    <div class="grid3">
+      <div class="field"><label for="sg">Sagittal sınıf</label>${sel('sg',SAG,s.sagittal)}</div>
+      <div class="field"><label for="vt">Vertikal</label>${sel('vt',VERT,s.vertical)}</div>
+      <div class="field"><label for="sna">SNA</label>${num('sna',s.sna)}</div>
+      <div class="field"><label for="snb">SNB</label>${num('snb',s.snb)}</div>
+      <div class="field"><label for="anb">ANB</label>${num('anb',s.anb)}</div>
+      <div class="field"><label for="wits">Wits</label>${num('wits',s.wits)}</div>
+      <div class="field"><label for="fma">FMA</label>${num('fma',s.fma)}</div>
+      <div class="field"><label for="gogn">SN-GoGn</label>${num('gogn',s.sn_gogn)}</div>
+    </div>
+
+    <h3>Anomali / özel durum etiketleri</h3>
+    <div class="chips" id="tagBox">${TAGS.map(x=>`<span class="chip ${(p.tags||[]).includes(x)?'on':''}" data-v="${esc(x)}">${esc(x)}</span>`).join('')}</div>
+
+    <h3>Tedavi protokolü</h3>
+    <div class="grid3">
+      <div class="field"><label for="ex">Çekim</label>${sel('ex',['','Çekimsiz','4 premolar','Üst 2 premolar','Alt keser','Diğer'],t.extraction)}</div>
+      <div class="field"><label for="ph">Faz</label>${sel('ph',['','Faz 1','Faz 2','Tek faz','Faz 1 + 2'],t.phase)}</div>
+      <div class="field"><label for="sr">Cerrahi</label>${sel('sr',['','Yok','Planlanıyor','Yapıldı'],t.surgery)}</div>
+    </div>
+    <div class="chips" id="applBox" style="margin-top:10px">${APPL.map(x=>`<span class="chip ${(p.appliances||[]).includes(x)?'on':''}" data-v="${esc(x)}">${esc(x)}</span>`).join('')}</div>
+    <div class="field" style="margin-top:12px"><label for="tn">Protokol notu</label><input id="tn" value="${esc(t.notes||'')}" placeholder="örn. Twin Block 9 ay, sonra sabit"></div>
+
+    <h3>Alınan kayıtlar</h3>
+    <div class="chips" id="recBox">${RECS.map(([k,l])=>`<span class="chip ${r[k]?'on':''}" data-v="${k}">${l}</span>`).join('')}</div>
+    <div class="field" style="margin-top:10px"><label for="rn">Kayıt notu</label><input id="rn" value="${esc(r.note||'')}" placeholder="T0 tam set, T1 fotoğraf + ceph"></div>
+
+    <h3>Serbest not</h3>
+    <textarea id="nt">${esc(p.notes||'')}</textarea>
+
+    <div class="row" style="margin-top:16px;justify-content:flex-end">
+      <button type="button" id="cancel">İptal</button>
+      <button type="submit" class="primary">Kaydet</button>
+    </div>
+  </form>`;
+  ['tagBox','applBox','recBox'].forEach(id=>$('#'+id).onclick=e=>{const c=e.target.closest('.chip');if(c)c.classList.toggle('on')});
+  $('#cancel').onclick=()=>p.id?renderDetail(p.id):renderList();
+  const v=id=>$('#'+id).value, n=id=>{const x=$('#'+id).value;return x===''?null:Number(x)};
+  const picked=id=>[...document.querySelectorAll('#'+id+' .chip.on')].map(c=>c.dataset.v);
+  $('#pf').onsubmit=async e=>{
+    e.preventDefault();
+    const out={id:p.id,first_name:v('fn').trim(),last_name:v('ln').trim(),protocol_no:v('pn').trim()||null,birth_date:v('bd')||null,sex:v('sx')||null,
+      first_exam:v('fe')||null,status:v('st'),growth_stage:v('gs')||null,chief_complaint:v('cc').trim()||null,
+      dental:{angle_r:v('ar'),angle_l:v('al'),canine_r:v('cr'),canine_l:v('cl'),overjet:n('oj'),overbite:n('ob'),crowd_u:n('cu'),crowd_l:n('cd'),midline:v('ml').trim()},
+      skeletal:{sagittal:v('sg'),vertical:v('vt'),sna:n('sna'),snb:n('snb'),anb:n('anb'),wits:n('wits'),fma:n('fma'),sn_gogn:n('gogn')},
+      tags:picked('tagBox'),appliances:picked('applBox'),
+      treatment:{extraction:v('ex'),phase:v('ph'),surgery:v('sr'),notes:v('tn').trim()},
+      records:Object.fromEntries([...RECS.map(([k])=>[k,picked('recBox').includes(k)]),['note',v('rn').trim()]]),
+      notes:v('nt').trim()||null};
+    const saved=await savePatient(out);
+    if(saved){toast('Kaydedildi');renderDetail(saved.id)}
+  };
+  window.scrollTo(0,0);
+}
+
+/* ---------- hasta dosyası ---------- */
+async function renderDetail(id){
+  const p=patients.find(x=>x.id===id);if(!p){renderList();return}
+  view={name:'detail',id};
+  $('#topActions').innerHTML=`<button class="ghost small" id="back">← Liste</button><button class="small" id="edit">Düzenle</button>`;
+  $('#back').onclick=renderList;$('#edit').onclick=()=>renderForm(p);
+  const d=p.dental||{},s=p.skeletal||{},t=p.treatment||{},r=p.records||{};
+  const dd=(k,v)=>v!==null&&v!==undefined&&v!==''?`<dt>${k}</dt><dd>${esc(v)}</dd>`:'';
+  app.innerHTML=`<div class="panel">
+    <div class="detail-head">
+      <div><h2>${esc(p.last_name.toLocaleUpperCase('tr'))} ${esc(p.first_name)}</h2>
+        <div class="muted mono" style="font-size:.85rem">${p.protocol_no?'#'+esc(p.protocol_no)+' · ':''}${p.sex==='K'?'Kadın':p.sex==='E'?'Erkek':''}${p.birth_date?' · '+fmtD(p.birth_date)+' ('+age(p.birth_date)+')':''}</div></div>
+      <span class="status ${esc(p.status||'')}">${esc((STATUS.find(x=>x[0]===p.status)||['',''])[1])}</span>
+    </div>
+    ${p.chief_complaint?`<p style="margin:10px 0 0">${esc(p.chief_complaint)}</p>`:''}
+    <h3>Tanı</h3>
+    <dl>${dd('İlk muayene',fmtD(p.first_exam))}${dd('CVM',p.growth_stage)}
+      ${dd('Angle molar',(d.angle_r||d.angle_l)?`sağ ${d.angle_r||'—'} / sol ${d.angle_l||'—'}`:'')}
+      ${dd('Kanin',(d.canine_r||d.canine_l)?`sağ ${d.canine_r||'—'} / sol ${d.canine_l||'—'}`:'')}
+      ${dd('Overjet / overbite',(d.overjet!=null||d.overbite!=null)?`${d.overjet??'—'} / ${d.overbite??'—'} mm`:'')}
+      ${dd('Çapraşıklık',(d.crowd_u!=null||d.crowd_l!=null)?`üst ${d.crowd_u??'—'} / alt ${d.crowd_l??'—'} mm`:'')}
+      ${dd('Orta hat',d.midline)}
+      ${dd('İskeletsel',[s.sagittal?'Sınıf '+s.sagittal:'',s.vertical].filter(Boolean).join(', '))}
+      ${dd('Sefalometri',[s.sna!=null?'SNA '+s.sna:'',s.snb!=null?'SNB '+s.snb:'',s.anb!=null?'ANB '+s.anb:'',s.wits!=null?'Wits '+s.wits:'',s.fma!=null?'FMA '+s.fma:'',s.sn_gogn!=null?'SN-GoGn '+s.sn_gogn:''].filter(Boolean).join(' · '))}
+    </dl>
+    ${(p.tags||[]).length?`<div class="chips" style="margin-top:10px">${p.tags.map(x=>`<span class="chip sm static on">${esc(x)}</span>`).join('')}</div>`:''}
+    <h3>Tedavi</h3>
+    <dl>${dd('Çekim',t.extraction)}${dd('Faz',t.phase)}${dd('Cerrahi',t.surgery)}${dd('Not',t.notes)}</dl>
+    ${(p.appliances||[]).length?`<div class="chips" style="margin-top:10px">${p.appliances.map(x=>`<span class="chip sm static">${esc(x)}</span>`).join('')}</div>`:'<div class="muted" style="font-size:.85rem">Aparey seçilmemiş.</div>'}
+    <h3>Kayıtlar</h3>
+    <div class="chips">${RECS.map(([k,l])=>`<span class="chip sm static ${r[k]?'on':''}">${r[k]?'✓ ':''}${l}</span>`).join('')}</div>
+    ${r.note?`<div class="hint">${esc(r.note)}</div>`:''}
+    ${p.notes?`<h3>Not</h3><p style="margin:0;white-space:pre-wrap">${esc(p.notes)}</p>`:''}
+  </div>
+  <div class="panel">
+    <h2>Vizitler</h2>
+    <div id="visits" class="muted">Yükleniyor…</div>
+    <div class="sep"></div>
+    <div class="grid2">
+      <div class="field"><label for="vd">Tarih</label><input id="vd" type="date" value="${today()}"></div>
+      <div class="field" style="grid-column:1/-1"><label>Yapılan</label><div class="chips" id="procBox">${PROCS.map(x=>`<span class="chip sm" data-v="${esc(x)}">${esc(x)}</span>`).join('')}</div></div>
+      <div class="field" style="grid-column:1/-1"><label for="vn">Not</label><input id="vn" placeholder="örn. 0.016 NiTi'ye geçildi, Sınıf II elastik başlandı"></div>
+    </div>
+    <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="primary small" id="addVisit">Vizit ekle</button></div>
+  </div>
+  <div class="panel">
+    <button class="danger small" id="delBtn">Hastayı sil</button>
+    <div class="confirm" id="delConfirm" hidden>
+      <div style="margin-bottom:8px">Kayıt ve tüm vizitleri silinecek. Geri alınamaz.</div>
+      <div class="row"><button class="danger small" id="delYes">Evet, sil</button><button class="small" id="delNo">Vazgeç</button></div>
+    </div>
+  </div>`;
+  $('#procBox').onclick=e=>{const c=e.target.closest('.chip');if(c)c.classList.toggle('on')};
+  $('#delBtn').onclick=()=>$('#delConfirm').hidden=false;
+  $('#delNo').onclick=()=>$('#delConfirm').hidden=true;
+  $('#delYes').onclick=async()=>{if(await deletePatient(id)){toast('Silindi');renderList()}};
+  $('#addVisit').onclick=async()=>{
+    const procs=[...document.querySelectorAll('#procBox .chip.on')].map(c=>c.dataset.v);
+    const note=$('#vn').value.trim();
+    if(!procs.length&&!note){toast('Bir işlem seç veya not yaz');return}
+    const {error}=await sb.from('visits').insert({patient_id:id,visit_date:$('#vd').value||today(),procedures:procs,note:note||null});
+    if(error){toast('Vizit eklenemedi: '+error.message);return}
+    $('#vn').value='';document.querySelectorAll('#procBox .chip.on').forEach(c=>c.classList.remove('on'));
+    await sb.from('patients').update({updated_at:new Date().toISOString()}).eq('id',id);
+    drawVisits(await loadVisits(id),id);toast('Vizit eklendi');
+  };
+  drawVisits(await loadVisits(id),id);
+  window.scrollTo(0,0);
+}
+function drawVisits(vs,pid){
+  const box=$('#visits');if(!box)return;
+  if(!vs.length){box.innerHTML='Henüz vizit yok.';return}
+  box.className='';
+  box.innerHTML=vs.map(v=>`<div class="visit"><div class="d">${fmtD(v.visit_date)}</div>
+    <div class="n">${(v.procedures||[]).map(x=>esc(x)).join(', ')}${v.note?`<small>${esc(v.note)}</small>`:''}</div>
+    <button class="ghost small" data-del="${v.id}" title="Sil">✕</button></div>`).join('');
+  box.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
+    if(b.dataset.armed){const {error}=await sb.from('visits').delete().eq('id',b.dataset.del);if(error){toast('Silinemedi');return}drawVisits(await loadVisits(pid),pid)}
+    else{b.dataset.armed='1';b.textContent='Sil?';b.classList.add('danger');setTimeout(()=>{if(b.isConnected){delete b.dataset.armed;b.textContent='✕';b.classList.remove('danger')}},3000)}
+  });
+}
+
+/* ---------- dışa aktar ---------- */
+function exportCSV(){
+  const rows=patients.filter(matches);
+  const H=['Soyad','Ad','Protokol','Doğum','Cinsiyet','İlk muayene','Durum','Angle sağ','Angle sol','Overjet','Overbite','İskeletsel','Vertikal','ANB','Etiketler','Apareyler','Çekim','Faz','Not'];
+  const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const lines=[H.join(';'),...rows.map(p=>{const d=p.dental||{},s=p.skeletal||{},t=p.treatment||{};
+    return [p.last_name,p.first_name,p.protocol_no,p.birth_date,p.sex,p.first_exam,p.status,d.angle_r,d.angle_l,d.overjet,d.overbite,s.sagittal,s.vertical,s.anb,(p.tags||[]).join(', '),(p.appliances||[]).join(', '),t.extraction,t.phase,p.notes].map(q).join(';')})];
+  const txt=lines.join('\n');
+  const fallback=()=>{const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast(rows.length+' kayıt panoya kopyalandı')}catch(e){toast('Kopyalanamadı')}ta.remove()};
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(()=>toast(rows.length+' kayıt panoya kopyalandı (Excel\'e yapıştır)')).catch(fallback);else fallback();
+}
+
+/* ---------- başlangıç ---------- */
+async function start(){
+  const {data}=await sb.auth.getSession();user=data.session?.user||null;
+  if(!user){renderAuth();return}
+  app.innerHTML='<div class="empty">Yükleniyor…</div>';
+  await loadPatients();renderList();
+}
+if(!cfg||!cfg.url){renderSetup()}
+else{
+  try{sb=window.supabase.createClient(cfg.url,cfg.key)}catch(e){renderSetup();return}
+  sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_OUT'){user=null;renderAuth()}});
+  start();
+}
+})();
+</script>
+
+</body>
+</html>
