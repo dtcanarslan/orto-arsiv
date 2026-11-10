@@ -6,7 +6,7 @@
 <style>:root{color-scheme:light dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
-<title>Orto Arşiv</title>
+<title>Can Arslan · Ortodonti Arşivi</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0d6b6a">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -118,7 +118,7 @@ dd{margin:0;font-family:var(--mono);font-size:.9rem;min-width:0;overflow-wrap:an
 <div class="wrap">
   <div class="topbar">
     <div class="row">
-      <div class="brand"><h1>Orto Arşiv</h1><span class="count" id="count"></span></div>
+      <div class="brand"><h1>Can Arslan · Ortodonti Arşivi</h1><span class="count" id="count"></span></div>
       <div class="row" id="topActions"></div>
     </div>
   </div>
@@ -174,8 +174,7 @@ function renderSetup(){
 }
 
 function renderAuth(){
-  $('#topActions').innerHTML='<button class="ghost small" id="reCfg">Bağlantı</button>';$('#count').textContent='';
-  $('#reCfg').onclick=()=>{try{localStorage.removeItem('orto_cfg')}catch(e){}location.reload()};
+  $('#topActions').innerHTML='';$('#count').textContent='';
   app.innerHTML=`<div class="auth panel">
     <h2>Giriş</h2>
     <div class="field"><label for="em">E-posta</label><input id="em" type="email" autocomplete="username"></div>
@@ -183,7 +182,16 @@ function renderAuth(){
     <button class="primary" id="login">Giriş yap</button>
     <button id="signup">İlk kez: hesap oluştur</button>
     <p id="authMsg"></p>
+    <div class="sep"></div>
+    <p><button class="ghost small" id="reCfg" style="color:var(--muted)">Bu cihazdaki veritabanı bağlantısını sıfırla</button></p>
+    <div class="confirm" id="cfgConfirm" hidden>
+      <div style="margin-bottom:8px">Supabase URL ve anahtar bu cihazdan silinir; hastalar silinmez, yeniden girince aynen gelir.</div>
+      <div class="row"><button class="danger small" id="cfgYes">Sıfırla</button><button class="small" id="cfgNo">Vazgeç</button></div>
+    </div>
   </div>`;
+  $('#reCfg').onclick=()=>$('#cfgConfirm').hidden=false;
+  $('#cfgNo').onclick=()=>$('#cfgConfirm').hidden=true;
+  $('#cfgYes').onclick=()=>{try{localStorage.removeItem('orto_cfg')}catch(e){}location.reload()};
   const msg=m=>$('#authMsg').textContent=m;
   $('#login').onclick=async()=>{
     const {error}=await sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});
